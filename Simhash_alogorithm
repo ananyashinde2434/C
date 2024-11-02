@@ -1,0 +1,61 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+#define HASH_SIZE 8  // 8-bit hash size
+
+// Simple 8-bit hash function for each word
+unsigned char hashWord(const char *word) {
+    unsigned char hash = 0;
+    while (*word) {
+        hash ^= *word;                      // XOR each character to affect hash
+        hash = (hash << 1) | (hash >> 7);   // Rotate left for bit distribution
+        word++;
+    }
+    return hash;
+}
+
+// Function to calculate SimHash for a given text
+unsigned char calculateSimHash(const char *text) {
+    int bitCounts[HASH_SIZE] = {0};  // Array to hold bit counts for SimHash
+    char *copy = strdup(text);       // Duplicate text to avoid modifying the original
+    if (copy == NULL) {              // Check for memory allocation failure
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(1);
+    }
+
+    char *word = strtok(copy, " ");  // Tokenize the text by spaces
+
+    // Process each word
+    while (word != NULL) {
+        unsigned char wordHash = hashWord(word);
+        
+        // Update bit counts based on word hash
+        for (int i = 0; i < HASH_SIZE; i++) {
+            if (wordHash & (1 << i))
+                bitCounts[i]++;  // Increment for 1
+            else
+                bitCounts[i]--;  // Decrement for 0
+        }
+        
+        word = strtok(NULL, " ");  // Move to the next word
+    }
+    free(copy);
+
+    // Generate final 8-bit SimHash from bit counts
+    unsigned char simHash = 0;
+    for (int i = 0; i < HASH_SIZE; i++) {
+        if (bitCounts[i] > 0)
+            simHash |= (1 << i);  // Set bit to 1 if positive count
+    }
+
+    return simHash;
+}
+
+int main() {
+    char text[] = "SimHash is a similarity hash function example";
+    unsigned char simHash = calculateSimHash(text);
+    printf("SimHash: 0x%02X\n", simHash);  // Display SimHash in hexadecimal
+    return 0;
+}
+
